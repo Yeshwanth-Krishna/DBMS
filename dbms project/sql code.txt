@@ -1,0 +1,47 @@
+erDiagram
+    USER {
+        int UserID PK "Unique identifier (used for login)"
+        string PasswordHash "Hashed password (used for login)"
+        string Role "Type of user ('Student', 'Faculty', 'Admin')"
+    }
+
+    EVENT {
+        int EventID PK "Unique identifier"
+        string EventName "Title/name of the event"
+        string Description "Details about the event"
+        date EventDate "Date of the event"
+        time EventTime "Time of the event"
+        string Location "Venue of the event"
+        string Category "Type of event"
+        string Priority "Importance level"
+        string RegistrationLink "URL for registration"
+        int CreatedByAdminID FK "Identifies the admin who created/manages"
+    }
+
+    REGISTRATION {
+        int RegistrationID PK "Unique identifier"
+        int UserID FK "The user registering"
+        int EventID FK "The event being registered for"
+        datetime RegistrationTimestamp "When registration occurred"
+    }
+
+    NOTIFICATION {
+        int NotificationID PK "Unique identifier"
+        string Message "Alert content"
+        datetime Timestamp "When generated"
+        int EventID FK "Related event"
+    }
+
+    USER_NOTIFICATION {
+        int UserNotificationID PK "Unique identifier"
+        int UserID FK "User receiving the notification"
+        int NotificationID FK "The notification sent"
+        boolean IsRead "Status (e.g., true/false)"
+    }
+
+    USER ||--o{ EVENT : "Manages (if Role='Admin')"
+    USER ||--|{ REGISTRATION : RegistersFor
+    EVENT ||--|{ REGISTRATION : HasRegistered
+    EVENT ||--o{ NOTIFICATION : Triggers
+    USER ||--|{ USER_NOTIFICATION : Receives
+    NOTIFICATION ||--|{ USER_NOTIFICATION : IsSentAs

@@ -1,0 +1,51 @@
+I understand you'd like the ER diagram itself. While I can't create a visual diagram directly, I can provide the structured description again, which contains all the necessary components (entities, attributes, relationships) to build one using an ER diagram tool:
+
+**Entities:**
+
+1.  **User:** Represents individuals using the system (Students, Faculty, Admins)[cite: 3, 9].
+2.  **Event:** Represents the college/university events being managed[cite: 1, 2, 3, 4, 5, 6, 7, 8, 10, 11].
+3.  **Registration:** Links Users to Events they register for[cite: 5, 11].
+4.  **Notification:** Represents alerts sent to users about events[cite: 11].
+5.  **UserNotification:** Links Users to the Notifications they receive[cite: 11].
+
+**Attributes (with Primary Keys (PK) and Foreign Keys (FK)):**
+
+1.  **User:**
+    * `UserID` (PK): Unique identifier (used for login).
+    * `PasswordHash`: Hashed password (used for login).
+    * `Role`: Type of user ('Student', 'Faculty', 'Admin')[cite: 9].
+2.  **Event:**
+    * `EventID` (PK): Unique identifier.
+    * `EventName`: Title/name of the event.
+    * `Description`: Details about the event.
+    * `EventDate`: Date of the event[cite: 10].
+    * `EventTime`: Time of the event.
+    * `Location`: Venue of the event.
+    * `Category`: Type of event[cite: 10].
+    * `Priority`: Importance level[cite: 10].
+    * `RegistrationLink`: URL for registration[cite: 5, 11].
+    * `CreatedByAdminID` (FK -> User.UserID): Identifies the admin who created/manages the event[cite: 5, 11].
+3.  **Registration:** (Associative Entity)
+    * `RegistrationID` (PK): Unique identifier.
+    * `UserID` (FK -> User.UserID): The user registering[cite: 5].
+    * `EventID` (FK -> Event.EventID): The event being registered for[cite: 5].
+    * `RegistrationTimestamp`: When registration occurred.
+4.  **Notification:**
+    * `NotificationID` (PK): Unique identifier.
+    * `Message`: Alert content[cite: 11].
+    * `Timestamp`: When generated.
+    * `EventID` (FK -> Event.EventID): Related event[cite: 11].
+5.  **UserNotification:** (Associative Entity)
+    * `UserNotificationID` (PK): Unique identifier.
+    * `UserID` (FK -> User.UserID): User receiving the notification[cite: 11].
+    * `NotificationID` (FK -> Notification.NotificationID): The notification sent[cite: 11].
+    * `IsRead`: Status (e.g., true/false).
+
+**Relationships (with Cardinality):**
+
+1.  **Manages (Admin User -> Event):** An `Admin` `Manages` `Event` (1:M - One-to-Many)[cite: 5, 11].
+2.  **RegistersFor (User <-> Event via Registration):** A `User` `RegistersFor` an `Event` (M:N - Many-to-Many, via `Registration` entity)[cite: 5].
+3.  **Triggers (Event -> Notification):** An `Event` `Triggers` a `Notification` (1:M)[cite: 11].
+4.  **Receives (User <-> Notification via UserNotification):** A `User` `Receives` a `Notification` (M:N - Many-to-Many, via `UserNotification` entity)[cite: 11].
+
+You can use this detailed structure to draw the ER diagram using any diagramming software or online tool (like draw.io, Lucidchart, etc.).

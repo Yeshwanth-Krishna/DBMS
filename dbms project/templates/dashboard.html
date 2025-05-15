@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EveSync Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            color: #fff;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .profile {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .profile-box {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 40px;
+            background: white;
+            color: black;
+            border-radius: 8px;
+            padding: 10px;
+            z-index: 100;
+            width: 200px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 60px;
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin: 40px auto;
+            max-width: 1000px;
+        }
+
+        .day {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 10px;
+            min-height: 120px;
+            position: relative;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .day:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.03);
+        }
+
+        .day.header {
+            background: transparent;
+            font-weight: bold;
+            text-align: center;
+            cursor: default;
+        }
+
+        .date-number {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .event-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.9em;
+        }
+
+        .event-list li {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 3px 5px;
+            margin-bottom: 4px;
+            border-radius: 5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dashboard-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 30px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+
+        .calendar-section {
+            flex: 3;
+            min-width: 600px;
+        }
+
+        .form-section {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            min-width: 300px;
+        }
+
+        .calendar-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        select.year-month {
+            flex: 1;
+            padding: 8px;
+            border-radius: 5px;
+            border: none;
+        }
+
+        form {
+            width: 100%;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button {
+            margin-top: 15px;
+            width: 100%;
+            padding: 10px;
+            background-color: #fff;
+            color: #2575fc;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #e0e0e0;
+        }
+
+        #eventModal {
+            display: none;
+            position: fixed;
+            top: 10%;
+            left: 25%;
+            width: 50%;
+            background: white;
+            color: black;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+<div class="profile" onclick="toggleProfileBox()">
+    <strong>{{ username.split('@')|first }}</strong> ({{ role|capitalize }})
+    <div class="profile-box" id="profileBox">
+        <p><strong>User:</strong> {{ username }}</p>
+        <p><strong>Role:</strong> {{ role|capitalize }}</p>
+        <p><a href="{{ url_for('logout') }}">Logout</a></p>
+    </div>
+</div>
+
+<h1>Welcome to EveSync</h1>
+
+<div class="dashboard-container">
+    <div class="calendar-section">
+        <!-- Year and Month Selectors -->
+        <div class="calendar-controls">
+            <select class="year-month" id="yearSelect"></select>
+            <select class="year-month" id="monthSelect"></select>
+        </div>
+
+        <!-- Calendar -->
+        <div class="calendar">
+            <!-- Calendar headers + days will be injected dynamically -->
+            <div class="day header">Sun</div>
+            <div class="day header">Mon</div>
+            <div class="day header">Tue</div>
+            <div class="day header">Wed</div>
+            <div class="day header">Thu</div>
+            <div class="day header">Fri</div>
+            <div class="day header">Sat</div>
+
+            {% for i in range(start_day) %}
+                <div class="day"></div>
+            {% endfor %}
+
+            {% for day in days_in_month %}
+                <div class="day" onclick="showEvents('{{ day }}')">
+                <div class="date-number">{{ day }}</div>
+                <ul class="event-list">
+                {% for event in events_by_day.get(day|string, []) %}
+                    <li>{{ event.name }}</li>
+                {% endfor %}
+                </ul>
+            </div>
+        {% endfor %}
+        </div>
+
+    </div>
+</div>
+
+    {% if role != 'student' %}
+    <div class="form-section">
+        <form method="POST" action="{{ url_for('add_event') }}">
+            <label for="event">Event Name</label>
+            <input type="text" id="event" name="event" required>
+
+            <label for="date">Date</label>
+            <input type="date" id="date" name="date" required>
+
+            <label for="time">Time</label>
+            <input type="time" id="time" name="time" required>
+
+            <label for="venue">Venue</label>
+            <input type="text" id="venue" name="venue" required>
+
+            <label for="description">Description</label>
+            <input type="text" id="description" name="description">
+
+            <button type="submit">Add Event</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<div id="eventModal">
+    <h3>Events for Day <span id="modalDay"></span></h3>
+    <ul id="modalEvents"></ul>
+    <button onclick="document.getElementById('eventModal').style.display='none'">Close</button>
+</div>
+
+<script>
+    const events = {{ events_by_day | tojson | safe }};
+
+    function showEvents(day) {
+        const modal = document.getElementById('eventModal');
+        const list = document.getElementById('modalEvents');
+        const modalDay = document.getElementById('modalDay');
+        modalDay.textContent = day;
+        list.innerHTML = '';
+        if (events[day]) {
+            events[day].forEach(e => {
+                list.innerHTML += `<li>${e.name}</li>`;
+            });
+        } else {
+            list.innerHTML = '<li>No events</li>';
+        }
+        modal.style.display = 'block';
+    }
+
+    function toggleProfileBox() {
+        const box = document.getElementById('profileBox');
+        box.style.display = (box.style.display === 'block') ? 'none' : 'block';
+    }
+
+    document.addEventListener('click', function (event) {
+        const profile = document.querySelector('.profile');
+        const box = document.getElementById('profileBox');
+        if (!profile.contains(event.target)) {
+            box.style.display = 'none';
+        }
+    });
+
+    // Default Date and Dropdown Initialization
+    window.onload = function () {
+        const today = new Date();
+        const dateInput = document.getElementById('date');
+        if (dateInput) {
+            dateInput.valueAsDate = today;
+        }
+
+        const yearSelect = document.getElementById('yearSelect');
+        const monthSelect = document.getElementById('monthSelect');
+
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth();
+
+        for (let y = currentYear - 5; y <= currentYear + 5; y++) {
+            const option = document.createElement("option");
+            option.value = y;
+            option.textContent = y;
+            if (y === currentYear) option.selected = true;
+            yearSelect.appendChild(option);
+        }
+
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+        months.forEach((m, i) => {
+            const option = document.createElement("option");
+            option.value = i;
+            option.textContent = m;
+            if (i === currentMonth) option.selected = true;
+            monthSelect.appendChild(option);
+        });
+    };
+</script>
+
+</body>
+</html>

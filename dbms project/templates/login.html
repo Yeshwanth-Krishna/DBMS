@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EveSync - Login</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
+  <style>
+    body {
+      background: linear-gradient(135deg, #2a007d, #6a00f4, #ff007f);
+      color: white;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .background {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: -1;
+    }
+
+    .ball {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      background: radial-gradient(circle, #ff007f, #6a00f4);
+      border-radius: 50%;
+      opacity: 0.7;
+      animation: moveBall infinite alternate ease-in-out;
+    }
+
+    @keyframes moveBall {
+      0% { transform: translateY(0px); }
+      100% { transform: translateY(120px); }
+    }
+
+    .login-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 40px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+      width: 400px;
+      text-align: center;
+      z-index: 2;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(45deg, #ff007f, #6a00f4);
+      -webkit-background-clip: text;
+      color: transparent;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .logo {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: #ff007f;
+      color: white;
+      font-weight: bold;
+      font-size: 1rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 10px;
+      vertical-align: middle;
+      text-align: center;
+    }
+
+    button {
+      background: linear-gradient(45deg, #ff007f, #6a00f4);
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      margin: 12px 0;
+      cursor: pointer;
+      transition: 0.4s;
+      border-radius: 8px;
+      font-weight: bold;
+      width: 100%;
+    }
+
+    button:hover {
+      transform: scale(1.1);
+      box-shadow: 0px 0px 15px rgba(255, 0, 127, 0.5);
+    }
+
+    .login-form {
+      display: none;
+      position: absolute;
+      top: 50%;
+      right: 50px;
+      transform: translateY(-50%);
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      backdrop-filter: blur(8px);
+      width: 350px;
+      z-index: 3;
+      animation: slideIn 0.4s ease-out forwards;
+    }
+
+    .login-form.slide-out {
+      animation: slideOut 0.4s ease-in forwards;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; right: -400px; }
+      to { opacity: 1; right: 50px; }
+    }
+
+    @keyframes slideOut {
+      from { opacity: 1; right: 50px; }
+      to { opacity: 0; right: -400px; }
+    }
+
+    input {
+      width: 85%;
+      padding: 10px;
+      margin: 10px 0;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+
+    .password-container {
+      position: relative;
+      width: 85%;
+      margin: 10px 0;
+    }
+
+    .password-container input { width: 100%; }
+
+    .password-container .eye-icon {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      color: white;
+      cursor: pointer;
+    }
+
+    .signup-link {
+      font-size: 1rem;
+      color: #ff007f;
+      text-decoration: none;
+      margin-top: 20px;
+      display: block;
+    }
+
+    .signup-link:hover {
+      text-decoration: underline;
+    }
+    .alert {
+      padding: 15px;
+      margin: 15px auto;
+      border-radius: 6px;
+      width: 80%;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .alert-success {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .alert-danger {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .alert-info {
+      background-color: #17a2b8;
+      color: white;
+    }
+
+  </style>
+</head>
+<body onclick="hideLoginForms(event)">
+  <div class="background">
+    <div class="ball" style="top: 10%; left: 15%; animation-duration: 6s;"></div>
+    <div class="ball" style="top: 50%; left: 30%; animation-duration: 8s;"></div>
+    <div class="ball" style="top: 20%; left: 70%; animation-duration: 10s;"></div>
+    <div class="ball" style="top: 80%; left: 60%; animation-duration: 7s;"></div>
+    <div class="ball" style="top: 40%; left: 90%; animation-duration: 5s;"></div>
+  </div>
+
+  <div class="login-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    <h1><div class="logo">E</div> EveSync</h1>
+    <p>Smart College Event Management System</p>
+    <button onclick="showLogin(event, 'student')">Student Login</button>
+    <button onclick="showLogin(event, 'faculty')">Faculty Login</button>
+    <button onclick="showLogin(event, 'admin')">Admin Login</button>
+    <p class="signup-link">Don't have an account? <a href="{{ url_for('signup') }}">Sign up here</a></p>
+  </div>
+
+  <!-- Student Login -->
+  <form id="student-login" class="login-form" method="POST" action="{{ url_for('login') }}" onclick="event.stopPropagation()">
+    <h2>Student Login</h2>
+    <input type="hidden" name="role" value="student">
+    <input type="text" name="username" placeholder="USN" required />
+    <div class="password-container">
+      <input type="password" name="password" id="student-password" placeholder="Password" required />
+      <i class="fas fa-eye eye-icon" onclick="togglePassword('student-password')"></i>
+    </div>
+    <button type="submit">Login</button>
+  </form>
+
+  <!-- faculty Login -->
+  <form id="faculty-login" class="login-form" method="POST" action="{{ url_for('login') }}" onclick="event.stopPropagation()">
+    <h2>Faculty Login</h2>
+    <input type="hidden" name="role" value="faculty">
+    <input type="text" name="username" placeholder="Email" required />
+    <div class="password-container">
+      <input type="password" name="password" id="faculty-password" placeholder="Password" required />
+      <i class="fas fa-eye eye-icon" onclick="togglePassword('faculty-password')"></i>
+    </div>
+    <button type="submit">Login</button>
+  </form>
+
+  <!-- admin Login -->
+  <form id="admin-login" class="login-form" method="POST" action="{{ url_for('login') }}" onclick="event.stopPropagation()">
+    <h2>Admin Login</h2>
+    <input type="hidden" name="role" value="admin">
+    <input type="text" name="username" placeholder="Admin ID" required />
+    <div class="password-container">
+      <input type="password" name="password" id="admin-password" placeholder="Password" required />
+      <i class="fas fa-eye eye-icon" onclick="togglePassword('admin-password')"></i>
+    </div>
+    <button type="submit">Login</button>
+  </form>
+
+
+  <script>
+    function showLogin(event, role) {
+      event.stopPropagation();
+      hideAllForms();
+      const form = document.getElementById(role + "-login");
+      form.classList.remove("slide-out");
+      form.style.display = "block";
+      form.classList.add("slide-in");
+    }
+
+    function hideLoginForms(event) {
+      const forms = document.querySelectorAll(".login-form");
+      forms.forEach(form => {
+        if (form.style.display === "block") {
+          form.classList.remove("slide-in");
+          form.classList.add("slide-out");
+          setTimeout(() => {
+            form.style.display = "none";
+          }, 400);
+        }
+      });
+    }
+
+    function hideAllForms() {
+      const forms = document.querySelectorAll(".login-form");
+      forms.forEach(form => {
+        form.style.display = "none";
+        form.classList.remove("slide-in", "slide-out");
+      });
+    }
+
+    function togglePassword(id) {
+      const passwordField = document.getElementById(id);
+      passwordField.type = passwordField.type === "password" ? "text" : "password";
+    }
+  </script>
+</body>
+</html>
