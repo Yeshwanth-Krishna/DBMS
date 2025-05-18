@@ -1,12 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, abort
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_mysqldb import MySQL
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
 from dotenv import load_dotenv
 import os
 from calendar import monthrange
 from datetime import date
-import mysql.connector
 
 # Load environment variables
 load_dotenv()
@@ -62,7 +60,7 @@ def login():
         role = request.form['role'].strip().lower()
 
         cur = mysql.connection.cursor()
-        result = cur.execute("SELECT Username, PasswordHash, Role FROM user WHERE Username = %s AND Role = %s",
+        result = cur.execute("SELECT username, passwordHash, role FROM user WHERE username = %s AND role = %s",
                              (username, role))
         if result > 0:
             user = cur.fetchone()
@@ -72,7 +70,7 @@ def login():
             if check_password_hash(stored_hash, password):
                 session['username'] = stored_username
                 session['role'] = stored_role.lower()
-                return redirect(url_for('dashboard'))
+                return redirect(url_for('dashboard1'))
             else:
                 error = 'Invalid credentials.'
         else:
@@ -81,73 +79,164 @@ def login():
 
     return render_template('login.html', error=error)
 
-@app.route('/dashboard')
-def dashboard():
+@app.route('/dashboard1')
+def dashboard1():
     if 'username' not in session:
         return redirect(url_for('login'))
 
     role = session['role']
     username = session['username']
 
-    # Current month and year
-    today = date.today()
-    year = today.year
-    month = today.month
-    start_day, total_days = monthrange(year, month)
+    # Get month and year from query parameters or default to current
+    try:
+        month = int(request.args.get('month', 0))
+        year = int(request.args.get('year', 0))
+        filter_year = request.args.get('filterYear', 'All')
+    except ValueError:
+        month = 0
+        year = 0
+        filter_year = 'All'
 
+    today = date.today()
+    if month < 1 or month > 12:
+        month = today.month
+    if year < 1900 or year > 2100:
+        year = today.year
+
+    start_day, total_days = monthrange(year, month)
     days_in_month = list(range(1, total_days + 1))
 
     cur = mysql.connection.cursor()
-    cur.execute("""
-        SELECT EventName AS name, DATE(EventDate) AS date, EventTime AS time, Venue AS venue, Description AS description
-        FROM event
-        WHERE MONTH(EventDate) = %s AND YEAR(EventDate) = %s
-    """, (month, year))
+    if filter_year == 'All':
+        cur.execute("""
+            SELECT EventID, EventName AS name, DATE(EventDate) AS date, EventTime AS time, Venue AS venue, Description AS description, Year
+            FROM event
+            WHERE MONTH(EventDate) = %s AND YEAR(EventDate) = %s
+        """, (month, year))
+    else:
+        # Remove 'Year ' prefix from filter_year before converting to int
+        year_filter_value = filter_year.replace('Year ', '').strip()
+        if year_filter_value.lower() == 'all':
+            # If 'All' is selected, do not filter by year
+            cur.execute("""
+                SELECT EventID, EventName AS name, DATE(EventDate) AS date, EventTime AS time, Venue AS venue, Description AS description, Year
+                FROM event
+                WHERE MONTH(EventDate) = %s AND YEAR(EventDate) = %s
+            """, (month, year))
+        else:
+            try:
+                year_filter_int = int(year_filter_value)
+            except ValueError:
+                year_filter_int = None  # or handle error as needed
+
+            if year_filter_int is not None:
+                cur.execute("""
+                    SELECT EventID, EventName AS name, DATE(EventDate) AS date, EventTime AS time, Venue AS venue, Description AS description, Year
+                    FROM event
+                    WHERE MONTH(EventDate) = %s AND YEAR(EventDate) = %s AND Year = %s
+                """, (month, year, year_filter_int))
+            else:
+                # If conversion failed, fallback to no filter or handle accordingly
+                cur.execute("""
+                    SELECT EventID, EventName AS name, DATE(EventDate) AS date, EventTime AS time, Venue AS venue, Description AS description, Year
+                    FROM event
+                    WHERE MONTH(EventDate) = %s AND YEAR(EventDate) = %s
+                """, (month, year))
     rows = cur.fetchall()
     cur.close()
 
     # Group events by day
     events_by_day = {}
     for row in rows:
-        name, date_obj, time, venue, description = row
-        day = date_obj.day
-        day_str = str(day)
-        if day_str not in events_by_day:
-            events_by_day[day_str] = []
-        events_by_day[day_str].append({
+        event_id, name, date_obj, time, venue, description, year_val = row
+        date_key = date_obj.strftime('%Y-%m-%d')  # Use full date as key
+        if date_key not in events_by_day:
+            events_by_day[date_key] = []
+
+    # Fix for time being timedelta instead of time object
+        if hasattr(time, 'strftime'):
+            time_str = time.strftime('%H:%M')
+        else:
+            total_seconds = time.total_seconds()
+            hours = int(total_seconds // 3600)
+            minutes = int((total_seconds % 3600) // 60)
+            time_str = f"{hours:02d}:{minutes:02d}"
+
+        events_by_day[date_key].append({
+            'EventID': event_id,
             'name': name,
-            'time': time.strftime('%H:%M'),
+            'time': time_str,
             'venue': venue,
-            'description': description
+            'description': description,
+            'year': year_val
         })
 
-    return render_template('dashboard.html',
+    return render_template('dashboard1.html',
                            username=username,
                            role=role,
                            start_day=start_day,
                            days_in_month=days_in_month,
-                           events_by_day=events_by_day)
+                           events_by_day=events_by_day,
+                           month=month,
+                           year=year,
+                           filter_year=filter_year)
 
 
 @app.route('/add_event', methods=['POST'])
 def add_event():
-    if 'username' not in session or session['role'] == 'student':
-        return redirect(url_for('login'))
+    if 'username' not in session or session['role'] not in ['faculty', 'admin']:
+        flash("You do not have permission to add events.", "danger")
+        return redirect(url_for('dashboard1'))
 
     name = request.form['event']
     date = request.form['date']
     time = request.form['time']
     venue = request.form['venue']
     description = request.form['description']
+    year = request.form.get('year')  # get year from form
+
+    # semester field is received but not used in DB, ignoring for now
+
+    print(f"DEBUG add_event: name={name}, date={date}, time={time}, venue={venue}, description={description}, year={year}")
+
+    if not date:
+        flash("Event date is required.", "danger")
+        return redirect(url_for('dashboard1'))
+
+    # Convert 'All' or invalid year to None before insert
+    if year == 'All' or not year or not year.isdigit():
+        year_value = None
+    else:
+        try:
+            # Remove 'Year ' prefix if present before converting to int
+            year_cleaned = year.replace('Year ', '').strip()
+            if year_cleaned.lower() == 'all':
+                year_value = None
+            else:
+                year_value = int(year_cleaned)
+        except ValueError:
+            year_value = None
 
     cur = mysql.connection.cursor()
-    cur.execute("INSERT INTO event (name, date, time, venue, description, created_by) VALUES (%s, %s, %s, %s, %s, %s)",
-                (name, date, time, venue, description, session['username']))
+    cur.execute("INSERT INTO event (EventName, EventDate, EventTime, Venue, Description, Year) VALUES (%s, %s, %s, %s, %s, %s)",
+                (name, date, time, venue, description, year_value))
     mysql.connection.commit()
     cur.close()
 
     flash("Event added successfully!", "success")
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('dashboard1'))
+
+@app.route('/delete_event/<int:event_id>', methods=['POST'])
+def delete_event(event_id):
+    if 'username' not in session or session['role'] not in ['faculty', 'admin']:
+        flash("You do not have permission to delete events.", "danger")
+        return redirect(url_for('dashboard1'))
+
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM event WHERE EventID = %s", (event_id,))
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('dashboard1'))
 
 @app.route('/logout')
 def logout():
@@ -156,8 +245,8 @@ def logout():
     return redirect(url_for('login'))
 
 @app.errorhandler(403)
-def forbidden(e):
+def forbidden(_):
     return render_template('403.html'), 403
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)

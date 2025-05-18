@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Elegant Calendar</title>
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body onclick="hideMenus(event)">
+  <div id="sidebar">
+    <button class="year-button active" onclick="setFilter('All')">All</button>
+    <button class="year-button" onclick="setFilter('Year 1')">Year 1</button>
+    <button class="year-button" onclick="setFilter('Year 2')">Year 2</button>
+    <button class="year-button" onclick="setFilter('Year 3')">Year 3</button>
+    <button class="year-button" onclick="setFilter('Year 4')">Year 4</button>
+  </div>
+  <div id="mainContent">
+    <div id="topbar">
+      <i id="hamburger" class="fas fa-bars" onclick="toggleMenu(event)"></i>
+      <div id="monthYearControls">
+        <form id="filterForm" method="get" action="{{ url_for('dashboard1') }}">
+          <button type="button" id="prevMonthBtn"></button>
+          {% set month_names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+          <select id="monthSelect" name="month" onchange="document.getElementById('filterForm').submit()">
+            {% for m in range(1, 13) %}
+              <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ month_names[m-1] }}</option>
+            {% endfor %}
+          </select>
+          <select id="yearSelect" name="year" onchange="document.getElementById('filterForm').submit()">
+            {% for y in range(2023, 2031) %}
+              <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+          <button type="button" id="nextMonthBtn"></button>
+        </form>
+      </div>
+      <div id="dashboardMenu" style="display:none;">
+        <a href="#" id="profileLink" onclick="toggleProfileMenu(event)">Profile</a>
+        <a href="#" id="settingsLink" onclick="toggleSettingsMenu(event)">Settings</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+      </div>
+      <div id="profileMenu" class="dropdown-menu" style="display:none;">
+        <div class="profile-info">
+          <img src="{{ url_for('static', filename='default-profile.png') }}" alt="Profile Photo" id="profilePhoto" />
+          <p id="profileName">{{ username }}</p>
+          <input type="file" id="profilePhotoInput" accept="image/*" onchange="previewProfilePhoto(event)" />
+          <button onclick="saveProfilePhoto()">Save Photo</button>
+        </div>
+      </div>
+      <div id="settingsMenu" class="dropdown-menu" style="display:none;">
+        <h3>Settings</h3>
+        <form id="settingsForm" onsubmit="saveSettings(event)">
+          <label for="changePassword">Change Password:</label>
+          <input type="password" id="changePassword" name="changePassword" placeholder="New Password" />
+          <button type="submit">Save Settings</button>
+        </form>
+      </div>
+    </div>
+    <div id="calendarContainer">
+      <div id="calendar" class="calendar-grid">
+       <!-- Headers -->
+       <div class="day header">Sun</div>
+       <div class="day header">Mon</div>
+       <div class="day header">Tue</div>
+       <div class="day header">Wed</div>
+       <div class="day header">Thu</div>
+       <div class="day header">Fri</div>
+       <div class="day header">Sat</div>
+
+       {% for i in range(0, start_day) %}
+         <div class="day empty"></div>
+       {% endfor %}
+
+       {% for day in days_in_month %}
+         {% set day_key = '{}-{:02d}-{:02d}'.format(year, month, day) %}
+         <div class="day">
+           <div class="date-number">{{ day }}</div>
+           <ul class="event-list">
+             {% for event in events_by_day.get(day_key, []) %}
+               <li data-event-date="{{ event.date }}">
+                 <strong>{{ event.name }}</strong><br>
+                 {{ event.time }} @ {{ event.venue }}<br>
+                 <em>{{ event.description }}</em><br>
+                 {% if role in ['faculty', 'admin'] %} 
+                 {% if event.get('EventID') %} 
+                 <form method="POST" action="{{ url_for('delete_event', event_id=event.get('EventID')) }}" style="display:inline;">
+                   <button type="submit" onclick="return confirm('Are you sure you want to delete this event?');" style="background:none; border:none; color:#ff4d4d; cursor:pointer; padding:0; font-size:14px;">Delete</button>
+                 </form>
+                 {% endif %} 
+                 {% endif %}
+               </li>
+             {% endfor %}
+           </ul>
+         </div>
+       {% endfor %}
+     </div>
+      <div id="editEventBox">
+        <h3>Add/Edit Event</h3>
+        {% if role in ['faculty', 'admin'] %}
+        <form id="eventForm" method="POST" action="{{ url_for('add_event') }}">
+          <p id="editDate"></p>
+          <label for="eventTitle">Event Title:</label><br>
+          <input type="text" id="eventTitle" name="event" required style="width: 100%; margin-bottom: 10px; padding: 8px; border-radius: 5px;"><br>
+          <label for="eventDate">Date:</label><br>
+          <input type="date" id="eventDate" name="date" required style="width: 100%; margin-bottom: 10px; padding: 8px; border-radius: 5px;"><br>
+          <label for="eventTime">Time:</label><br>
+          <input type="time" id="eventTime" name="time" required style="width: 100%; margin-bottom: 10px; padding: 8px; border-radius: 5px;"><br>
+          <label for="eventVenue">Venue:</label><br>
+          <input type="text" id="eventVenue" name="venue" required style="width: 100%; margin-bottom: 10px; padding: 8px; border-radius: 5px;"><br>
+          <label for="eventYear">Year:</label><br>
+          <select id="eventYear" name="year" style="width: 100%; margin-bottom: 10px; padding: 8px; border-radius: 5px;">
+            <option value="" disabled selected>Select Year</option>
+            <option value="All">All</option>
+            <option value="1">Year 1</option>
+            <option value="2">Year 2</option>
+            <option value="3">Year 3</option>
+            <option value="4">Year 4</option>
+          </select><br>
+          <label for="eventDescription">Description:</label><br>
+          <textarea id="eventDescription" name="description" rows="3" style="width: 100%; margin-bottom: 10px; padding: 8px; border-radius: 5px;"></textarea><br>
+          <button type="submit" style="background-color: #2575fc; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer;">Save Event</button>
+        </form>
+        {% else %}
+        <p>You do not have permission to add or edit events.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div id="eventModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h3>Events on <span id="modalDay"></span></h3>
+      <ul id="modalEvents"></ul>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    const eventsByDay = JSON.parse('{{ events_by_day | default({}) | tojson | safe }}');
+    window.userRole = "{{ role }}";
+  </script>
+  <script type="text/javascript" src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
+</create_file>
