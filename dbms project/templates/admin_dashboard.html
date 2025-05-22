@@ -1,11 +1,255 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Admin Dashboard</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Dashboard - User Management</title>
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* Override colors for admin dashboard */
+    body {
+      background-color: #1e1e2f !important;
+      color: #cfd8dc !important;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    #topbar {
+      background-color: #2c2c44 !important;
+      color: #cfd8dc !important;
+      padding: 10px 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+    }
+    #sidebar {
+      background-color: #2c2c44 !important;
+      width: 220px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow-y: auto;
+      z-index: 1003;
+    }
+    #mainContent {
+      margin-left: 240px;
+      padding: 20px;
+      transition: margin-left 0.3s ease;
+    }
+    .table-container {
+      background-color: #2c2c44 !important;
+      color: #cfd8dc !important;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 600px;
+      color: #cfd8dc;
+    }
+    table th, table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #455a64;
+      color: #cfd8dc;
+      text-align: left;
+    }
+    .year-button {
+      background-color: #3949ab !important;
+      color: white !important;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 15px;
+    }
+    .year-button:hover {
+      background-color: #283593 !important;
+    }
+    .btn {
+      background-color: #3949ab !important;
+      color: white !important;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 15px;
+    }
+    .btn:hover {
+      background-color: #283593 !important;
+    }
+    .action-btn {
+      color: #82b1ff;
+      background: none;
+      border: none;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+    .action-btn:hover {
+      text-decoration: underline;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+    .modal.show {
+      display: flex;
+    }
+    .modal-content {
+      background: #37474f;
+      padding: 24px;
+      border-radius: 6px;
+      width: 100%;
+      max-width: 400px;
+      color: #cfd8dc;
+    }
+    .form-group {
+      margin-bottom: 12px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #607d8b;
+      border-radius: 4px;
+      background-color: #455a64;
+      color: #cfd8dc;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .cancel-btn {
+      background-color: #78909c;
+    }
+    .save-btn {
+      background-color: #3949ab;
+    }
+    .cancel-btn:hover {
+      background-color: #546e7a;
+    }
+    .save-btn:hover {
+      background-color: #283593;
+    }
+  </style>
 </head>
-<body>
-    <h1>Welcome, {{ username }} (Admin)</h1>
-    <a href="{{ url_for('logout') }}">Logout</a>
+<body onclick="hideMenus(event)">
+  <div id="sidebar">
+    <!-- Sidebar content can be added here if needed -->
+  </div>
+  <div id="mainContent">
+    <div id="topbar">
+      <div id="dashboardMenu" style="display:flex; gap: 20px; color: #cfd8dc; font-weight: 600;">
+        <a href="{{ url_for('dashboard1') }}" style="color: #cfd8dc; text-decoration: none;">Calendar</a>
+        <a href="{{ url_for('logout') }}" style="color: #cfd8dc; text-decoration: none;">Logout</a>
+      </div>
+    </div>
+    <h1 style="margin-bottom: 20px;">Admin Dashboard - User Management</h1>
+    <button class="year-button" onclick="openModal()">+ Add User</button>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td>{{ user.name }}</td>
+            <td>{{ user.name }}</td>
+            <td>{{ user.role }}</td>
+            <td>
+              <button class="action-btn" onclick="editUser('{{ user.name }}')">Edit</button>
+              <button class="action-btn" onclick="deleteUser('{{ user.name }}')">Delete</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="userModal" class="modal">
+    <div class="modal-content">
+      <h2>Add User</h2>
+      <form id="userForm">
+        <input type="hidden" id="editingUserId">
+        <div class="form-group">
+          <label>Name</label>
+          <input id="name" type="text" required>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input id="email" type="email" required>
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <select id="role" required>
+            <option value="Admin">Admin</option>
+            <option value="Faculty">Faculty</option>
+            <option value="Student">Student</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn cancel-btn" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn save-btn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const userModal = document.getElementById('userModal');
+    const userForm = document.getElementById('userForm');
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const roleInput = document.getElementById('role');
+    const editingUserId = document.getElementById('editingUserId');
+
+    function openModal() {
+      userModal.classList.add('show');
+    }
+
+    function closeModal() {
+      userModal.classList.remove('show');
+      userForm.reset();
+      editingUserId.value = '';
+    }
+
+    userForm.onsubmit = function (e) {
+      e.preventDefault();
+      // Backend integration for add/edit not implemented yet
+      closeModal();
+    };
+
+    function editUser(id) {
+      alert('Edit user functionality is not implemented yet.');
+    }
+
+    function deleteUser(id) {
+      alert('Delete user functionality is not implemented yet.');
+    }
+  </script>
+  <script type="text/javascript" src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
