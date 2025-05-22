@@ -38,6 +38,16 @@
       <div id="dashboardMenu" style="display:none;">
         <a href="#" id="profileLink" onclick="toggleProfileMenu(event)">Profile</a>
         <a href="#" id="settingsLink" onclick="toggleSettingsMenu(event)">Settings</a>
+        {% if role == 'faculty' %}
+        <a href="{{ url_for('faculty_dashboard') }}">
+          <button id="facultyDashboardBtn">Faculty Dashboard</button>
+        </a>
+        {% endif %}
+        {% if role == 'admin' %}
+        <a href="{{ url_for('admin_dashboard') }}">
+          <button id="adminDashboardBtn">Admin Dashboard</button>
+        </a>
+        {% endif %}
         <a href="{{ url_for('logout') }}">Logout</a>
       </div>
       <div id="profileMenu" class="dropdown-menu" style="display:none;">
@@ -99,6 +109,7 @@
         <h3>Add/Edit Event</h3>
         {% if role in ['faculty', 'admin'] %}
         <form id="eventForm" method="POST" action="{{ url_for('add_event') }}">
+          <input type="hidden" id="eventId" name="event_id" value="">
           <p id="editDate"></p>
           <label for="eventTitle">Event Title:</label><br>
           <input type="text" id="eventTitle" name="event" required style="width: 100%; margin-bottom: 10px; padding: 8px; border-radius: 5px;"><br>
