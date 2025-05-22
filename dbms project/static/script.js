@@ -20,11 +20,31 @@ function toggleMenu() {
 }
 
 function setFilter(year) {
+  console.log('setFilter called with year:', year);
   filterYear = year;
   document.querySelectorAll('.year-button').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.year-button').forEach(btn => {
     if (btn.textContent === year) btn.classList.add('active');
   });
+
+  // Synchronize yearSelect dropdown with filterYear
+  const yearSelect = document.getElementById('yearSelect');
+  if (year === 'All') {
+    // Disable yearSelect or set to a default valid year
+    yearSelect.disabled = true;
+  } else {
+    yearSelect.disabled = false;
+    // Extract year number from filterYear string like "Year 2"
+    const yearNumber = year.replace('Year ', '').trim();
+    // Find matching option and select it
+    for (let option of yearSelect.options) {
+      if (option.value === yearNumber || option.text === yearNumber) {
+        option.selected = true;
+        break;
+      }
+    }
+  }
+
   // Submit the filter form with year filter as query param
   const form = document.getElementById('filterForm');
   // Remove existing filterYear input if any
@@ -40,6 +60,10 @@ function setFilter(year) {
   }
   form.submit();
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('Page loaded, current filterYear:', filterYear);
+});
 
 function showEvents(day) {
   const modal = document.getElementById('eventModal');
@@ -137,16 +161,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const eventForm = document.getElementById('eventForm');
 
   calendar.querySelectorAll('.day:not(.header):not(.empty)').forEach(dayEl => {
-    dayEl.addEventListener('click', () => {
+    dayEl.addEventListener('click', (event) => {
+      event.stopPropagation();
       const day = dayEl.querySelector('.date-number')?.textContent;
       alert('Clicked day: ' + day);
       if (!day) return;
 
       console.log('User role:', window.userRole);
+      console.log('Current filterYear:', filterYear);
       if (window.userRole && (window.userRole === 'faculty' || window.userRole === 'admin')) {
-        const year = yearSelect.value;
+        let year = yearSelect.value;
         const month = String(monthSelect.value).padStart(2, '0');
+        console.log('yearSelect.value:', year);
+        console.log('monthSelect.value:', monthSelect.value);
         const dayPadded = String(day).padStart(2, '0');
+        // If filterYear is 'All' or yearSelect is disabled, use current year as fallback
+        if (filterYear === 'All' || !year || yearSelect.disabled) {
+          year = new Date().getFullYear();
+          console.log('Using fallback year:', year);
+        }
         const selectedDateStr = `${year}-${month}-${dayPadded}`;
 
         selectedDate = selectedDateStr;
@@ -158,6 +191,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (eventSemSelect) {
           eventSemSelect.value = "";
         }
+
+        // Reset form action to add_event for new event
+        eventForm.action = "/add_event";
+        // Clear hidden event ID input
+        document.getElementById('eventId').value = "";
+
+        // Clear other form fields
+        document.getElementById('eventTitle').value = "";
+        document.getElementById('eventTime').value = "";
+        document.getElementById('eventVenue').value = "";
+        document.getElementById('eventDescription').value = "";
+        document.getElementById('eventYear').value = "";
 
         editEventBox.classList.add('show');
         console.log('Event form shown');
@@ -207,6 +252,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (eventSemSelect) {
         eventSemSelect.value = ""; // No semester info in event list, reset
       }
+
+      // Set form action to edit_event for editing
+      eventForm.action = "/edit_event";
+      // Set hidden event ID input
+      document.getElementById('eventId').value = eventId;
 
       editEventBox.classList.add('show');
     });
