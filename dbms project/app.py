@@ -1,3 +1,4 @@
+import MySQLdb
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_mysqldb import MySQL
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -180,8 +181,6 @@ def dashboard1():
                            month=month,
                            year=year,
                            filter_year=filter_year)
-
-
 @app.route('/add_event', methods=['POST'])
 def add_event():
     if 'username' not in session or session['role'] not in ['faculty', 'admin']:
@@ -194,10 +193,11 @@ def add_event():
     venue = request.form['venue']
     description = request.form['description']
     year = request.form.get('year')  # get year from form
+    created_by = session.get('username')  # get current logged-in user
 
     # semester field is received but not used in DB, ignoring for now
 
-    print(f"DEBUG add_event: name={name}, date={date}, time={time}, venue={venue}, description={description}, year={year}")
+    print(f"DEBUG add_event: name={name}, date={date}, time={time}, venue={venue}, description={description}, year={year}, created_by={created_by}")
 
     if not date:
         flash("Event date is required.", "danger")
@@ -218,8 +218,8 @@ def add_event():
             year_value = None
 
     cur = mysql.connection.cursor()
-    cur.execute("INSERT INTO event (EventName, EventDate, EventTime, Venue, Description, Year) VALUES (%s, %s, %s, %s, %s, %s)",
-                (name, date, time, venue, description, year_value))
+    cur.execute("INSERT INTO event (EventName, EventDate, EventTime, Venue, Description, Year, CreatedBy) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                (name, date, time, venue, description, year_value, created_by))
     mysql.connection.commit()
     cur.close()
 
@@ -237,6 +237,95 @@ def delete_event(event_id):
     mysql.connection.commit()
     cur.close()
     return redirect(url_for('dashboard1'))
+
+@app.route('/edit_event', methods=['POST'])
+def edit_event():
+    if 'username' not in session or session['role'] not in ['faculty', 'admin']:
+        flash("You do not have permission to edit events.", "danger")
+        return redirect(url_for('dashboard1'))
+
+    event_id = request.form.get('event_id')
+    name = request.form['event']
+    date = request.form['date']
+    time = request.form['time']
+    venue = request.form['venue']
+    description = request.form['description']
+    year = request.form.get('year')
+
+    if not event_id:
+        flash("Event ID is required for editing.", "danger")
+        return redirect(url_for('dashboard1'))
+
+    if not date:
+        flash("Event date is required.", "danger")
+        return redirect(url_for('dashboard1'))
+
+    # Convert 'All' or invalid year to None before update
+    if year == 'All' or not year or not year.isdigit():
+        year_value = None
+    else:
+        try:
+            year_cleaned = year.replace('Year ', '').strip()
+            if year_cleaned.lower() == 'all':
+                year_value = None
+            else:
+                year_value = int(year_cleaned)
+        except ValueError:
+            year_value = None
+
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        UPDATE event
+        SET EventName = %s, EventDate = %s, EventTime = %s, Venue = %s, Description = %s, Year = %s
+        WHERE EventID = %s
+    """, (name, date, time, venue, description, year_value, event_id))
+    mysql.connection.commit()
+    cur.close()
+
+    flash("Event updated successfully!", "success")
+    return redirect(url_for('dashboard1'))
+@app.route('/admin_dashboard')
+def admin_dashboard():
+    if 'username' not in session or session.get('role') != 'admin':
+        return redirect(url_for('forbidden'))
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur.execute("SELECT username AS name, username AS email, role FROM user")
+    users = cur.fetchall()
+    cur.close()
+    return render_template('admin_dashboard.html', users=users)
+
+@app.route('/faculty_dashboard')
+def faculty_dashboard():
+    if 'username' not in session or session.get('role') != 'faculty':
+        return redirect(url_for('forbidden'))
+    username = session['username']
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur.execute("""
+        SELECT EventName, EventDate, EventTime, Venue, Description, Year
+        FROM event
+        WHERE CreatedBy = %s
+        ORDER BY EventDate DESC, EventTime DESC
+    """, (username,))
+    rows = cur.fetchall()
+    cur.close()
+
+    # Convert EventTime timedelta to string for template
+    events = []
+    for row in rows:
+        event = dict(row)
+        time_val = event.get('EventTime')
+        if hasattr(time_val, 'strftime'):
+            event['EventTime'] = time_val.strftime('%H:%M')
+        elif time_val is not None:
+            total_seconds = time_val.total_seconds()
+            hours = int(total_seconds // 3600)
+            minutes = int((total_seconds % 3600) // 60)
+            event['EventTime'] = f"{hours:02d}:{minutes:02d}"
+        else:
+            event['EventTime'] = ''
+        events.append(event)
+
+    return render_template('faculty_dashboard.html', username=username, events=events)
 
 @app.route('/logout')
 def logout():
