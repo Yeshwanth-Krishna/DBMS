@@ -129,6 +129,11 @@ body {
   gap: 25px;
   flex-wrap: wrap;
   justify-content: center;
+  margin-right: 360px; /* Add right margin to make space for the event form */
+}
+
+#editEventBox {
+  z-index: 1100; /* Increase z-index to appear above calendar events */
 }
 
 .calendar-grid {
@@ -229,7 +234,7 @@ body {
   width: 320px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.2);
   position: fixed;
-  top: 20px;
+  bottom: 20px;
   right: 20px;
   height: calc(100vh - 40px);
   overflow-y: auto;
@@ -423,4 +428,18 @@ button:hover {
     justify-content: center;
     margin-top: 10px;
   }
+}
+#adminDashboardBtn, #facultyDashboardBtn {
+  background: transparent;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0;
+  font-size: 1rem;
+  transition: color 0.3s ease;
+}
+
+#adminDashboardBtn:hover, #facultyDashboardBtn:hover {
+  color: #e0e0e0;
 }
