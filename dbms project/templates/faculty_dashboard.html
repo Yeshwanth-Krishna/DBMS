@@ -1,11 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Faculty Dashboard</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Faculty Dashboard - My Events</title>
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* Button style matching dashboard1 */
+    #calendarBtn {
+      background: transparent;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      padding: 0;
+      font-size: 1rem;
+      transition: color 0.3s ease;
+    }
+    #calendarBtn:hover {
+      color: #e0e0e0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #2575fc;
+      color: white;
+    }
+  </style>
 </head>
-<body>
-    <h1>Welcome, {{ username }} (Faculty)</h1>
-    <a href="{{ url_for('logout') }}">Logout</a>
+<body onclick="hideMenus(event)">
+  <div id="sidebar">
+    <button class="year-button active" onclick="setFilter('All')">All</button>
+    <button class="year-button" onclick="setFilter('Year 1')">Year 1</button>
+    <button class="year-button" onclick="setFilter('Year 2')">Year 2</button>
+    <button class="year-button" onclick="setFilter('Year 3')">Year 3</button>
+    <button class="year-button" onclick="setFilter('Year 4')">Year 4</button>
+  </div>
+  <div id="mainContent">
+    <div id="topbar">
+      <i id="hamburger" class="fas fa-bars" onclick="toggleMenu(event)"></i>
+      <div id="monthYearControls">
+        <h2>My Events</h2>
+      </div>
+      <div id="dashboardMenu" style="display:none;">
+        <a href="#" id="profileLink" onclick="toggleProfileMenu(event)">Profile</a>
+        <a href="#" id="settingsLink" onclick="toggleSettingsMenu(event)">Settings</a>
+        <a href="{{ url_for('dashboard1') }}">
+          <button id="calendarBtn">Calendar</button>
+        </a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+      </div>
+      <div id="profileMenu" class="dropdown-menu" style="display:none;">
+        <div class="profile-info">
+          <img src="{{ url_for('static', filename='default-profile.png') }}" alt="Profile Photo" id="profilePhoto" />
+          <p id="profileName">{{ username }}</p>
+          <input type="file" id="profilePhotoInput" accept="image/*" onchange="previewProfilePhoto(event)" />
+          <button onclick="saveProfilePhoto()">Save Photo</button>
+        </div>
+      </div>
+      <div id="settingsMenu" class="dropdown-menu" style="display:none;">
+        <h3>Settings</h3>
+        <form id="settingsForm" onsubmit="saveSettings(event)">
+          <label for="changePassword">Change Password:</label>
+          <input type="password" id="changePassword" name="changePassword" placeholder="New Password" />
+          <button type="submit">Save Settings</button>
+        </form>
+      </div>
+    </div>
+    <div id="contentArea" style="padding: 20px;">
+      {% if events %}
+        <table>
+          <thead>
+            <tr>
+              <th>Event Title</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Venue</th>
+              <th>Description</th>
+              <th>Year</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for event in events %}
+            <tr>
+              <td>{{ event.EventName }}</td>
+              <td>{{ event.EventDate.strftime('%Y-%m-%d') }}</td>
+              <td>{% if event.EventTime and event.EventTime is string %}{{ event.EventTime }}{% elif event.EventTime %}{{ event.EventTime.strftime('%H:%M') }}{% else %}{{ '' }}{% endif %}</td>
+              <td>{{ event.Venue }}</td>
+              <td>{{ event.Description }}</td>
+              <td>{{ event.Year if event.Year else 'All' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p>No events found.</p>
+      {% endif %}
+    </div>
+  </div>
+  <script type="text/javascript" src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
