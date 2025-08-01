@@ -1,4 +1,4 @@
-# 📅 EveSync – Smart College Event Calendar
+![Screenshot_1-8-2025_111940_127 0 0 1](https://github.com/user-attachments/assets/e655b3f4-b536-4c3d-947e-3bfb3c0ea1b7)# 📅 EveSync – Smart College Event Calendar
 
 **EveSync** is a full-stack web application built with **Flask** and **MySQL**, designed to help students, faculty, and administrators at colleges manage and track events more effectively. Inspired by everyday calendar apps, EveSync brings event scheduling and updates right to your browser — but tailored for college life.
 
@@ -123,7 +123,17 @@ Special thanks to:
 <p align="center">
   <img src="https://github.com/user-attachments/assets/bc898ce1-562d-4c22-b899-ca3baa7e07bb" width="48%" alt="EveSync UI"/>
   <img src="https://github.com/user-attachments/assets/cde17e8a-174c-45f1-b2c0-bb1cc746175d" width="48%" alt="Calendar Screenshot"/>
+  <br/><br/>
+  <img src="https://github.com/user-attachments/assets/5a4095a3-457a-4650-9d03-91b944c1cc3e" width="48%" alt="Screenshot 1"/>
+  <img src="https://github.com/user-attachments/assets/4ee78ee9-6bc9-47a9-8403-6abcbe73febf" width="48%" alt="Screenshot 2"/>
+  <br/><br/>
+  <img src="https://github.com/user-attachments/assets/412b0ab9-0ff8-4ac9-9ff5-68afb6c29ca2" width="30%" alt="Screenshot 3"/>
+  <img src="https://github.com/user-attachments/assets/865463e2-38ee-4da3-a618-64d2a8c879b9" width="30%" alt="Screenshot 4"/>
+  <img src="https://github.com/user-attachments/assets/b0498f78-ebc1-4e9f-ad8c-1e039c216ebc" width="30%" alt="Screenshot 5"/>
+  <br/><br/>
+  <img src="https://github.com/user-attachments/assets/ba320b16-65e9-43fe-bb16-987c26d019e0" width="50%" alt="Final Screenshot"/>
 </p>
+
 
 
 
